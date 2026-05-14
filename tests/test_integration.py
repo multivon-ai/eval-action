@@ -50,7 +50,7 @@ def _report(*, name: str, evaluators_per_case: list[dict[str, bool]],
 
 def test_pipeline_pass_with_no_regression():
     """A run identical to baseline should produce a PASS gate."""
-    cases = [{"faith": True, "halu": True}] * 5 + [{"faith": True, "halu": False}] * 5
+    cases = [{"faith": True, "hallucination": True}] * 5 + [{"faith": True, "hallucination": False}] * 5
     current = _report(name="t1", evaluators_per_case=cases, cost_usd=0.01)
     baseline = _report(name="t1", evaluators_per_case=cases, cost_usd=0.01)
 
@@ -66,8 +66,8 @@ def test_pipeline_pass_with_no_regression():
 
 def test_pipeline_needs_rework_on_safety_regression():
     n = 10
-    baseline_cases = [{"halu": True}] * n
-    current_cases = [{"halu": False}] * n  # all hallu cases now fail
+    baseline_cases = [{"hallucination": True}] * n
+    current_cases = [{"hallucination": False}] * n  # all hallu cases now fail
     current = _report(name="t2", evaluators_per_case=current_cases, cost_usd=0.02)
     baseline = _report(name="t2", evaluators_per_case=baseline_cases, cost_usd=0.02)
 
@@ -75,7 +75,7 @@ def test_pipeline_needs_rework_on_safety_regression():
     gate = classify_gate(diff, policy_path="", fail_on="PR_NEEDS_REWORK")
     body = build_comment(current, baseline, diff, gate)
 
-    # "halu" matches the safety-bucket fuzzy match (substring).
+    # "hallucination" matches the safety-bucket fuzzy match (substring).
     assert gate.verdict == "NEEDS_REWORK"
     assert gate.should_fail
     assert "NEEDS_REWORK" in body
@@ -97,7 +97,7 @@ def test_pipeline_fix_then_merge_on_cost_runaway():
 
 
 def test_pipeline_no_baseline_still_renders():
-    cases = [{"faith": True, "halu": True}] * 5
+    cases = [{"faith": True, "hallucination": True}] * 5
     current = _report(name="t4", evaluators_per_case=cases, cost_usd=0.01)
 
     diff = compare_reports(current, None)
