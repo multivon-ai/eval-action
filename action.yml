@@ -1,0 +1,89 @@
+name: "multivon-eval-action"
+description: "Run a multivon-eval suite on every PR. Posts a statistical CI-aware comment, gates the merge."
+author: "Multivon (https://multivon.ai)"
+branding:
+  icon: "check-square"
+  color: "purple"
+
+inputs:
+  suite:
+    description: "Path to the Python file that builds the EvalSuite. The file must expose a `suite` variable or a `build_suite()` callable that returns an EvalSuite."
+    required: true
+
+  baseline:
+    description: "Git ref to diff against. Defaults to the base branch of the PR."
+    required: false
+    default: ""
+
+  fail-on:
+    description: "Gate threshold. One of NEVER | PR_NEEDS_REWORK | PR_FIX_THEN_MERGE | ANY_REGRESSION."
+    required: false
+    default: "PR_NEEDS_REWORK"
+
+  runs-per-case:
+    description: "Number of runs per case (multi-run flakiness detection). Higher = more confidence, higher cost."
+    required: false
+    default: "3"
+
+  workers:
+    description: "Parallel cases in flight."
+    required: false
+    default: "4"
+
+  evaluator-concurrency:
+    description: "Parallel evaluators per case. Leave blank for unbounded."
+    required: false
+    default: ""
+
+  comment-mode:
+    description: "How to post the PR comment. One of replace | append | off."
+    required: false
+    default: "replace"
+
+  gate-policy:
+    description: "Path to a YAML gate-policy file with custom rules. Optional."
+    required: false
+    default: ""
+
+  github-token:
+    description: "GitHub token with PR comment-write permission. Defaults to GITHUB_TOKEN."
+    required: false
+    default: "${{ github.token }}"
+
+  lockfile:
+    description: "Path to a saved suite.lock. If set, the Action will verify the live suite has not drifted from it."
+    required: false
+    default: ""
+
+outputs:
+  gate:
+    description: "Final gate verdict: PASS | FIX_THEN_MERGE | NEEDS_REWORK"
+  pass_rate:
+    description: "Overall pass rate, 0–1."
+  cost_usd:
+    description: "Estimated USD cost of the eval run."
+  comment_url:
+    description: "URL of the PR comment that was posted, if any."
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - "--suite"
+    - "${{ inputs.suite }}"
+    - "--baseline"
+    - "${{ inputs.baseline }}"
+    - "--fail-on"
+    - "${{ inputs.fail-on }}"
+    - "--runs-per-case"
+    - "${{ inputs.runs-per-case }}"
+    - "--workers"
+    - "${{ inputs.workers }}"
+    - "--evaluator-concurrency"
+    - "${{ inputs.evaluator-concurrency }}"
+    - "--comment-mode"
+    - "${{ inputs.comment-mode }}"
+    - "--gate-policy"
+    - "${{ inputs.gate-policy }}"
+    - "--lockfile"
+    - "${{ inputs.lockfile }}"

@@ -1,0 +1,27 @@
+# .github/workflows/eval.yml
+#
+# Minimal multivon-eval-action workflow. Runs on every PR; gates
+# merges when an evaluator regresses with p<0.05 against the base
+# branch.
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "evals/**"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Required for baseline diff
+      - uses: multivon-ai/eval-action@v1
+        with:
+          suite: evals/production.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

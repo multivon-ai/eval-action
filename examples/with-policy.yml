@@ -1,0 +1,41 @@
+# .github/workflows/eval.yml
+#
+# Production multivon-eval workflow with a custom gate policy, suite
+# lockfile, and 5-run flakiness detection.
+on:
+  pull_request:
+    paths: [src/**, evals/**]
+  push:
+    branches: [main]
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: multivon-ai/eval-action@v1
+        id: eval
+        with:
+          suite: evals/production.py
+          runs-per-case: 5
+          workers: 8
+          evaluator-concurrency: 4
+          gate-policy: .multivon/gate-policy.yaml
+          lockfile: .multivon/suite.lock
+          fail-on: PR_FIX_THEN_MERGE   # any regression blocks merge
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Notify Slack on regression
+        if: ${{ steps.eval.outputs.gate != 'PASS' }}
+        run: |
+          curl -X POST -H 'Content-Type: application/json' \
+            -d '{"text":"⚠️ Eval gate ${{ steps.eval.outputs.gate }} on PR #${{ github.event.pull_request.number }}"}' \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
