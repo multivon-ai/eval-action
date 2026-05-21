@@ -1,25 +1,33 @@
 # multivon-ai/eval-action
 
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-multivon--eval-2ea44f?logo=github)](https://github.com/marketplace/actions/multivon-eval)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![multivon-eval](https://img.shields.io/badge/built%20on-multivon--eval-emerald)](https://github.com/multivon-ai/multivon-eval)
+
+**[Marketplace listing](https://github.com/marketplace/actions/multivon-eval)** · [Engine: multivon-eval](https://github.com/multivon-ai/multivon-eval) · [Docs](https://docs.multivon.ai/guides/ci-cd)
+
 > Run a [multivon-eval](https://github.com/multivon-ai/multivon-eval)
 > suite on every pull request. Posts a PR comment with Wilson confidence
 > intervals, McNemar p-values, cost in dollars, and an opinionated gate
 > verdict.
 
-The comment looks like this::
+The comment looks like this:
 
-    ## multivon-eval — ⚠️ FIX_THEN_MERGE
-    _toxicity regression (−18.0pp, p=0.012); cost 1.7× baseline_
+```markdown
+## multivon-eval — ⚠️ FIX_THEN_MERGE
+_toxicity regression (−18.0pp, p=0.012); cost 1.7× baseline_
 
-    Pass rate 85.4% · Cost $0.0345 · Cases 50 · Runs/case 3 · Δ vs baseline −4.6pp · Cost Δ 1.7×
+Pass rate 85.4% · Cost $0.0345 · Cases 50 · Runs/case 3 · Δ vs baseline −4.6pp · Cost Δ 1.7×
 
-    ### Per-evaluator
-    | Evaluator      | Pass rate (95% CI)   | Baseline | Δ        | p (McNemar) | Verdict        |
-    |---             |---                   |---       |---       |---          |---             |
-    | `faithfulness` | 90.0% [0.78–0.96]    | 95.0%    | −5.0pp   | 0.31        | noise          |
-    | `toxicity`     | 50.0% [0.32–0.68]    | 100.0%   | −50.0pp  | 0.001       | 🔻 regression  |
-    | `pii_detection`| 100.0% [0.93–1.00]   | 100.0%   | 0.0pp    | —           | ≈ unchanged    |
+### Per-evaluator
+| Evaluator      | Pass rate (95% CI)   | Baseline | Δ        | p (McNemar) | Verdict        |
+|---             |---                   |---       |---       |---          |---             |
+| `faithfulness` | 90.0% [0.78–0.96]    | 95.0%    | −5.0pp   | 0.31        | noise          |
+| `toxicity`     | 50.0% [0.32–0.68]    | 100.0%   | −50.0pp  | 0.001       | 🔻 regression  |
+| `pii_detection`| 100.0% [0.93–1.00]   | 100.0%   | 0.0pp    | —           | ≈ unchanged    |
 
-    🔒 **Lock:** lock OK
+🔒 **Lock:** lock OK
+```
 
 ## Why use this
 
@@ -99,7 +107,7 @@ def build_suite() -> EvalSuite:
 
 ## Gate policy
 
-Defaults handle 90% of cases. Override per repo with::
+Defaults handle 90% of cases. Override per repo with:
 
 ```yaml
 # .multivon/gate-policy.yaml
@@ -144,6 +152,19 @@ the actual number every time.
 
 Pair with multivon-eval's built-in judge cache (`JudgeConfig(cache=True)`)
 to amortize across repeated PRs on the same baseline.
+
+## The Multivon ecosystem
+
+Five public + one early-access package, all built on a shared evaluation engine:
+
+| Repo | What it is |
+|---|---|
+| [multivon-eval](https://github.com/multivon-ai/multivon-eval) | Python SDK — the engine eval-action runs on every PR |
+| [pdfhell](https://github.com/multivon-ai/pdfhell) | Adversarial PDFs — also emits JUnit output, also gates merges |
+| [multivon-mcp](https://github.com/multivon-ai/multivon-mcp) | MCP server — call the same evals from inside Claude / Cursor / Cline |
+| **eval-action** (you are here) | GitHub Action wrapper |
+| [eval-framework-benchmark](https://github.com/multivon-ai/eval-framework-benchmark) | Reproducible head-to-head benchmark vs DeepEval + RAGAS |
+| multivon-guard *(early access)* | Local proxy that catches LLM coding agents leaking secrets / PII |
 
 ## License
 
