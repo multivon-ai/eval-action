@@ -1,10 +1,10 @@
 # multivon-ai/eval-action
 
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-multivon--eval-2ea44f?logo=github)](https://github.com/marketplace/actions/multivon-eval)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![multivon-eval](https://img.shields.io/badge/built%20on-multivon--eval-emerald)](https://github.com/multivon-ai/multivon-eval)
+[![CI](https://github.com/multivon-ai/eval-action/actions/workflows/ci.yml/badge.svg)](https://github.com/multivon-ai/eval-action/actions/workflows/ci.yml)
 
-**[Marketplace listing](https://github.com/marketplace/actions/multivon-eval)** · [Engine: multivon-eval](https://github.com/multivon-ai/multivon-eval) · [Docs](https://docs.multivon.ai/guides/ci-cd)
+[Engine: multivon-eval](https://github.com/multivon-ai/multivon-eval) · [Docs](https://docs.multivon.ai/guides/ci-cd) · Apache 2.0
 
 > Run a [multivon-eval](https://github.com/multivon-ai/multivon-eval)
 > suite on every pull request. Posts a PR comment with Wilson confidence

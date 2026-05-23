@@ -1,0 +1,67 @@
+name: CI
+
+# Self-CI for multivon-ai/eval-action. Runs the unit tests on every push
+# (test_comment, test_compare, test_gate, test_integration). Marketplace
+# review wants to see a green CI badge before approval.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install runtime + test deps
+        run: |
+          python -m pip install --upgrade pip
+          # Pull what the action's entrypoint needs at runtime, plus pytest.
+          pip install pytest pyyaml
+          # The action ships its evaluation engine via multivon-eval; install
+          # the latest pinned-major so the integration test can build a real
+          # EvalReport object the way the action does in production.
+          pip install "multivon-eval>=0.9.0,<0.10"
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Validate action.yml schema
+        run: |
+          # Trivial schema check: required keys present + branding icon valid.
+          python -c "
+          import yaml
+          with open('action.yml') as f: a = yaml.safe_load(f)
+          assert 'name' in a, 'missing name'
+          assert 'description' in a, 'missing description'
+          assert 'runs' in a, 'missing runs'
+          b = a.get('branding') or {}
+          assert b.get('icon'), 'missing branding.icon'
+          assert b.get('color'), 'missing branding.color'
+          print(f\"✓ action.yml OK — branding: icon={b['icon']} color={b['color']}\")
+          "
+
+  docker-build:
+    # The action ships as a docker container. Smoke-build the image on every
+    # PR so a Dockerfile regression can't sneak past code review and
+    # surface only at marketplace-runtime.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build action container
+        run: docker build -t eval-action:ci .
+      - name: Verify entrypoint is executable
+        run: docker run --rm --entrypoint sh eval-action:ci -c 'test -x /entrypoint.sh && echo "entrypoint executable"'
