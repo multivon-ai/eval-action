@@ -64,4 +64,4 @@ jobs:
       - name: Build action container
         run: docker build -t eval-action:ci .
       - name: Verify entrypoint is executable
-        run: docker run --rm --entrypoint sh eval-action:ci -c 'test -x /entrypoint.sh && echo "entrypoint executable"'
+        run: docker run --rm --entrypoint sh eval-action:ci -c 'test -x /action/entrypoint.sh && echo "entrypoint executable"'
