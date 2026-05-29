@@ -97,7 +97,16 @@ def _run_suite_on_ref(suite_path: str, ref: str, runs: int, workers: int) -> dic
     suite = _load_suite(suite_path)
     model_fn = _model_fn()
     report = suite.run(model_fn, runs=runs, workers=workers, verbose=False)
-    return json.loads(report.to_json())
+    raw = report.to_json()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(
+            f"::error::EvalReport.to_json() returned non-JSON data "
+            f"({type(exc).__name__}: {exc}). first 200 chars: {raw[:200]!r}",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
 
 def main() -> int:

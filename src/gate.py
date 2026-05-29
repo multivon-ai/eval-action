@@ -23,6 +23,7 @@ reinventing OPA.
 """
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -103,7 +104,22 @@ def _evaluate_policy_file(diff: SuiteDiff, policy_path: str) -> Gate | None:
         spec = yaml.safe_load(Path(policy_path).read_text())
     except FileNotFoundError:
         return None
-    rules = (spec or {}).get("gates", []) if isinstance(spec, dict) else []
+    except yaml.YAMLError as exc:
+        print(f"::warning::gate-policy {policy_path!r} is not valid YAML "
+              f"({type(exc).__name__}); falling back to default gate rules.",
+              file=sys.stderr)
+        return None
+    if not isinstance(spec, dict):
+        print(f"::warning::gate-policy {policy_path!r} top-level is not a mapping "
+              f"(got {type(spec).__name__}); falling back to default gate rules.",
+              file=sys.stderr)
+        return None
+    rules = spec.get("gates", [])
+    if not isinstance(rules, list):
+        print(f"::warning::gate-policy {policy_path!r} 'gates' key is not a list "
+              f"(got {type(rules).__name__}); falling back to default gate rules.",
+              file=sys.stderr)
+        return None
     for rule in rules:
         cond = rule.get("rule", "")
         on_fail: GateVerdict = rule.get("on_fail", "FIX_THEN_MERGE")

@@ -15,7 +15,7 @@ WORKDIR /action
 # Pin the same minor version we test against. Action consumers can
 # override via @v1.0, @v1.1, etc. — each tag rebuilds with a different
 # multivon-eval pin. v1.x action tracks multivon-eval 0.9.x.
-RUN pip install --upgrade pip && pip install "multivon-eval>=0.9.0,<1.0" "PyYAML>=6.0"
+RUN pip install --upgrade pip && pip install "multivon-eval>=0.9.0,<1.0" "PyYAML>=6.0,<7.0"
 
 COPY src/ /action/src/
 COPY entrypoint.sh /action/entrypoint.sh

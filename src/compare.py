@@ -131,7 +131,7 @@ def compare_reports(current: dict, baseline: dict | None) -> SuiteDiff:
         base_summary = baseline.get("summary", {})
         diff.baseline_pass_rate = float(base_summary.get("pass_rate", 0.0))
         diff.baseline_cost_usd = (base_summary.get("costs") or {}).get("total_cost_usd")
-        if (diff.baseline_cost_usd and diff.baseline_cost_usd > 0
+        if (diff.baseline_cost_usd is not None and diff.baseline_cost_usd > 0
                 and diff.current_cost_usd is not None):
             diff.cost_delta_x = round(diff.current_cost_usd / diff.baseline_cost_usd, 2)
         base_evs = _evaluator_pass_rates(baseline)
