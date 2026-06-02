@@ -106,3 +106,40 @@ gates:
         # NEEDS_REWORK (it matches the "halluc" safety bucket fuzzily).
         # Either way it should not be PASS.
         assert g.verdict != "PASS"
+
+    def test_unsupported_rule_syntax_silently_no_ops(self, tmp_path):
+        """Rules like ``evaluator(faithfulness).regression_p < 0.05`` were
+        documented in earlier READMEs but the parser never landed them.
+        Documents the current contract: such rules don't match (return
+        False) and the verdict falls through to the default rules.
+
+        If we ever ship a typed DSL, this test should flip to assert the
+        rule fires.
+        """
+        policy = tmp_path / "policy.yaml"
+        policy.write_text("""
+gates:
+  - rule: "evaluator(faithfulness).regression_p < 0.05"
+    on_fail: NEEDS_REWORK
+""")
+        # No regressions, no cost delta — defaults give PASS. If the
+        # unsupported rule were (incorrectly) matched, we'd get
+        # NEEDS_REWORK instead.
+        diff = _diff()
+        g = classify_gate(diff, str(policy), fail_on="PR_NEEDS_REWORK")
+        assert g.verdict == "PASS"
+
+    def test_plain_regression_token_fires(self, tmp_path):
+        """`rule: "regression"` is the documented, parser-supported way
+        to gate on any evaluator regression."""
+        policy = tmp_path / "policy.yaml"
+        policy.write_text("""
+gates:
+  - rule: "regression"
+    on_fail: FIX_THEN_MERGE
+""")
+        diff = _diff(regressions=["any_non_safety_evaluator"])
+        g = classify_gate(diff, str(policy), fail_on="PR_NEEDS_REWORK")
+        # Either FIX_THEN_MERGE (policy hit) or NEEDS_REWORK (default
+        # safety-class match) — but never PASS.
+        assert g.verdict != "PASS"

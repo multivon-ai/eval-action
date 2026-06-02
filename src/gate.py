@@ -11,15 +11,31 @@ Default rules:
 Override via a YAML policy file passed as ``--gate-policy``::
 
     gates:
-      - rule: "evaluator(faithfulness).regression_p < 0.05"
-        on_fail: NEEDS_REWORK
+      - rule: "regression"
+        on_fail: FIX_THEN_MERGE
       - rule: "cost_delta_x > 2.0"
         on_fail: FIX_THEN_MERGE
       - rule: "lock_drift"
         on_fail: NEEDS_REWORK
 
-The DSL is intentionally minimal — just enough to gate real CI without
-reinventing OPA.
+Supported rule tokens (exactly what ``_rule_holds`` parses):
+
+  • ``regression`` — fires if any evaluator in the suite regressed
+    (``is_regression=True`` after the paired-McNemar test at p<0.05).
+  • ``cost_delta_x <op> <number>`` — supports ``>``, ``<``, ``>=``,
+    ``<=``, ``==``. Compares observed cost ratio to the threshold.
+  • ``lock_drift`` — reserved. Currently a no-op at the gate layer
+    (lockfile drift is enforced one level up in the runner). Will
+    return ``True`` when wired through.
+
+Anything else falls through to ``False`` (no match) and the default
+rules apply. For per-evaluator targeting (e.g. faithfulness-only),
+the default rules already route safety-class regressions
+(toxicity/bias/pii/hallucination by name match) to NEEDS_REWORK.
+
+The DSL is intentionally minimal — just enough to gate real CI
+without reinventing OPA. A typed DSL with ``evaluator(name).<field>``
+accessors is tracked as future work (see GH issue).
 """
 from __future__ import annotations
 

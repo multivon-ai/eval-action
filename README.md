@@ -120,6 +120,20 @@ gates:
 
 Pass `gate-policy: .multivon/gate-policy.yaml` to the Action.
 
+### Supported rule tokens
+
+The parser is intentionally minimal. These are the exact tokens it matches:
+
+| Token | What it does |
+|---|---|
+| `regression` | Fires if any evaluator regressed (`is_regression=True` after paired McNemar at p<0.05). |
+| `cost_delta_x <op> <number>` | Supports `>`, `<`, `>=`, `<=`, `==`. Compares observed cost ratio to the threshold. |
+| `lock_drift` | Reserved. Currently a no-op at the gate layer (lockfile drift is enforced one level up in the runner). |
+
+Anything else silently falls through to the default rules. **For per-evaluator targeting** (e.g. faithfulness-only or safety-class gating), the default rules already route safety-class regressions (toxicity/bias/pii/hallucination by name match) to `NEEDS_REWORK` at p<0.05 — you don't need a custom rule for that.
+
+A typed DSL with `evaluator(name).<field>` accessors is tracked as [post-launch work](https://github.com/multivon-ai/eval-action/issues) — earlier versions of this README advertised that syntax but the parser never landed it.
+
 ## How the verdict is computed
 
 Default rules, applied top-down:
