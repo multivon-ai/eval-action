@@ -81,6 +81,31 @@ def build_suite() -> EvalSuite:
     return suite
 ```
 
+### Baseline from `main`
+
+The Wilson-CI / McNemar comparison needs a baseline. By default it uses
+the base branch of the PR (typically `main`). To explicitly pin the
+baseline ref:
+
+```yaml
+- uses: multivon-ai/eval-action@v1
+  with:
+    suite: evals/production.py
+    baseline: origin/main          # or any ref: origin/release/v1, a commit SHA, etc.
+```
+
+For nightly trend tracking against a fixed reference run, commit a
+`baseline_report.json` to the repo and point at it via the `baseline:`
+input — the Action will diff against the saved JSON instead of
+re-running.
+
+### Action source
+
+This Action is available via Git (`multivon-ai/eval-action@v1` resolves
+through GitHub's Git-clone path). The GitHub Marketplace listing is
+pending — you'll see "Marketplace" tagging on the repo once the
+manual-review UI clears it. The Git form works today regardless.
+
 ## Inputs
 
 | Input | Default | Description |
@@ -157,6 +182,25 @@ Verdict → exit code is driven by the `fail-on` input.
 - **Does not handle PRs from forks** that lack `secrets.OPENAI_API_KEY`.
   Standard GitHub limitation; document a `workflow_run` pattern for
   fork support.
+
+## Pairs with the `eval-audit` Claude Code skill
+
+This Action runs eval gates **at PR time**. The
+[`eval-audit` Claude Code skill](https://github.com/multivon-ai/multivon-eval/blob/main/multivon_eval/_skills/eval-audit/SKILL.md)
+runs the *same* underlying comparison **pre-push**, so the developer
+sees the regression in their editor before opening a PR. Both call
+into the same `multivon-eval` engine (`compare_reports`, paired
+McNemar, Wilson CIs); they differ only in *where the agent lives*:
+
+- **Pre-PR (editor):** Claude Code skill — `multivon-eval install-skills`
+  wires it up so it auto-invokes between `/review` and `/ship` on diffs
+  touching prompts / model calls / tool defs.
+- **PR time (CI):** this Action — posts the verdict as a PR comment
+  and gates the merge.
+
+Using both gives you a two-stage gate: fast feedback in the editor,
+canonical record on the PR. Skipping the skill is fine — this Action
+stands alone.
 
 ## Cost expectations
 
