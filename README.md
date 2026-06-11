@@ -70,9 +70,10 @@ jobs:
 
 ```python
 from multivon_eval import EvalSuite, EvalCase
-from multivon_eval.evaluators.llm_judge import Faithfulness, Hallucination
 
 def build_suite() -> EvalSuite:
+    # Preset already includes Faithfulness, Hallucination, Relevance,
+    # Toxicity, Bias, PII + NotEmpty — add evaluators only to extend it.
     suite = EvalSuite.eu_ai_act_high_risk(jurisdiction="gdpr")
     suite.add_cases([
         EvalCase(input="Summarize this contract.", context=open("evals/contract.txt").read()),

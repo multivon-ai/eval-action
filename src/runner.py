@@ -109,6 +109,24 @@ def _run_suite_on_ref(suite_path: str, ref: str, runs: int, workers: int) -> dic
         sys.exit(2)
 
 
+def _clean_staleness_md(raw: str) -> str:
+    """Tidy the staleness markdown for the step summary.
+
+    The renderer ships its own "## Prompt staleness" heading (we add our
+    warn-only one) and ends with an "_exit N_" line meant for terminal
+    use — both read as defects in a GitHub step summary.
+    """
+    import re
+    lines = raw.strip().splitlines()
+    if lines and lines[0].strip() == "## Prompt staleness":
+        lines = lines[1:]
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if lines and re.fullmatch(r"_exit \d+_", lines[-1].strip()):
+        lines.pop()
+    return "\n".join(lines).strip()
+
+
 def _maybe_staleness_summary(repo_path: str) -> None:
     """Append the prompt-drift staleness report to the job's step summary.
 
@@ -124,7 +142,7 @@ def _maybe_staleness_summary(repo_path: str) -> None:
              "--format", "markdown"],
             capture_output=True, text=True, timeout=120,
         )
-        report_md = proc.stdout.strip()
+        report_md = _clean_staleness_md(proc.stdout)
         if not report_md:
             print(f"[runner] staleness: no output (exit {proc.returncode}); "
                   f"stderr: {proc.stderr.strip()[:200]}", file=sys.stderr)

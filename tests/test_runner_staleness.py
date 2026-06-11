@@ -28,6 +28,19 @@ def test_appends_markdown_to_step_summary(tmp_path, monkeypatch):
     assert "CHANGED (1)" in text
 
 
+def test_strips_duplicate_heading_and_exit_line(tmp_path, monkeypatch):
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    raw = "## Prompt staleness\n\n**2 changed** · 0 removed\n\n_exit 2_\n"
+    with mock.patch("subprocess.run", return_value=_Proc(stdout=raw, returncode=2)):
+        _maybe_staleness_summary(".")
+    text = summary.read_text()
+    assert "Prompt-drift staleness (warn-only)" in text   # our heading
+    assert "## Prompt staleness\n" not in text            # renderer's duplicate gone
+    assert "_exit 2_" not in text                         # debug line stripped
+    assert "**2 changed**" in text                        # findings survive
+
+
 def test_nonzero_exit_still_appends_and_never_raises(tmp_path, monkeypatch):
     # exit 2 = no baseline; the friendly hint still lands in the summary.
     summary = tmp_path / "s.md"
