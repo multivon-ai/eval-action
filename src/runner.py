@@ -109,6 +109,42 @@ def _run_suite_on_ref(suite_path: str, ref: str, runs: int, workers: int) -> dic
         sys.exit(2)
 
 
+def _maybe_staleness_summary(repo_path: str) -> None:
+    """Append the prompt-drift staleness report to the job's step summary.
+
+    Warn-only by contract: this function must NEVER fail the action — not on
+    a missing baseline (exit 2), not on staleness findings (we don't pass
+    --fail-on), not on a broken multivon-eval install. The gate verdict and
+    the action's exit code are decided entirely elsewhere.
+    """
+    import subprocess
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "multivon_eval", "staleness", repo_path,
+             "--format", "markdown"],
+            capture_output=True, text=True, timeout=120,
+        )
+        report_md = proc.stdout.strip()
+        if not report_md:
+            print(f"[runner] staleness: no output (exit {proc.returncode}); "
+                  f"stderr: {proc.stderr.strip()[:200]}", file=sys.stderr)
+            return
+        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary_path:
+            with open(summary_path, "a", encoding="utf-8") as f:
+                f.write("\n## Prompt-drift staleness (warn-only)\n\n")
+                f.write(report_md)
+                f.write("\n")
+            print(f"[runner] staleness: report appended to step summary "
+                  f"(exit {proc.returncode}, warn-only)", file=sys.stderr)
+        else:
+            # Local / non-Actions run: print instead of vanishing.
+            print(report_md, file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 — warn-only means warn-only
+        print(f"::warning::staleness check skipped ({type(exc).__name__}: {exc})",
+              file=sys.stderr)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(prog="multivon-eval-action")
     ap.add_argument("--suite", required=True)
@@ -121,6 +157,7 @@ def main() -> int:
                     choices=["replace", "append", "off"])
     ap.add_argument("--gate-policy", default="")
     ap.add_argument("--lockfile", default="")
+    ap.add_argument("--staleness", default="")
     args = ap.parse_args()
 
     # ── 1. Load + verify lockfile if configured ────────────────────────────
@@ -155,6 +192,10 @@ def main() -> int:
         comment_url = post_comment(body, mode=args.comment_mode) or ""
         if comment_url:
             print(f"[runner] commented: {comment_url}", file=sys.stderr)
+
+    # ── 5b. Prompt-drift staleness summary (warn-only) ──────────────────────
+    if args.staleness:
+        _maybe_staleness_summary(args.staleness)
 
     # ── 6. Emit GitHub Actions outputs ─────────────────────────────────────
     _set_output("gate", gate.verdict)

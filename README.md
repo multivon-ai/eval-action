@@ -119,6 +119,7 @@ manual-review UI clears it. The Git form works today regardless.
 | `comment-mode` | `replace` | `replace` (rewrite our previous comment), `append`, or `off`. |
 | `gate-policy` | (none) | Path to a YAML policy file overriding the default gate rules. |
 | `lockfile` | (none) | Path to a saved `suite.lock`. If set, drift causes a warning in the comment. |
+| `staleness` | (none) | Repo path (usually `.`) to check for prompt-drift staleness. Appends the `multivon-eval staleness` report to the job step summary. **Warn-only** — never changes the gate or exit code. |
 | `github-token` | `${{ github.token }}` | Token with PR `comments: write` permission. |
 
 ## Outputs
@@ -129,6 +130,27 @@ manual-review UI clears it. The Git form works today regardless.
 | `pass_rate` | `0.854` |
 | `cost_usd` | `0.0345` |
 | `comment_url` | `https://github.com/…/issues/1284#issuecomment-...` |
+
+## Prompt-drift staleness (warn-only)
+
+If your repo has a committed `prompt_baseline.json` (see the
+[staleness guide](https://docs.multivon.ai/guides/staleness)), the Action can
+append the drift report to the job's step summary:
+
+```yaml
+- uses: multivon-ai/eval-action@v1
+  with:
+    suite: evals/production.py
+    staleness: "."
+```
+
+This surfaces CHANGED / REMOVED / ADDED prompts next to the eval results —
+including the determinacy headline ("N of M call sites statically
+resolvable") and the standing blind-spots footer, so the summary never
+overclaims what static analysis can know. It is warn-only by contract: a
+gating mode (per-category `fail-on`) is tracked in
+[eval-action#1](https://github.com/multivon-ai/eval-action/issues/1) and
+will stay opt-in.
 
 ## Gate policy
 

@@ -55,6 +55,17 @@ inputs:
     required: false
     default: ""
 
+  staleness:
+    description: >-
+      Path to a repo to check for prompt-drift staleness (usually "."). When
+      set, the Action appends `multivon-eval staleness` markdown output to the
+      job's step summary. Warn-only: staleness findings never change the gate
+      verdict or the exit code in this version. Requires a committed
+      prompt_baseline.json (run `multivon-eval staleness baseline .`); without
+      one the summary shows the friendly first-run hint instead of findings.
+    required: false
+    default: ""
+
 outputs:
   gate:
     description: "Final gate verdict: PASS | FIX_THEN_MERGE | NEEDS_REWORK"
@@ -87,3 +98,5 @@ runs:
     - "${{ inputs.gate-policy }}"
     - "--lockfile"
     - "${{ inputs.lockfile }}"
+    - "--staleness"
+    - "${{ inputs.staleness }}"
