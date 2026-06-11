@@ -163,6 +163,16 @@ def _maybe_staleness_summary(repo_path: str) -> None:
               file=sys.stderr)
 
 
+def _note_reserved_evaluator_concurrency(value: str) -> None:
+    """The evaluator-concurrency input is reserved — not yet wired to the
+    engine (the sync EvalSuite.run path doesn't accept it). Tell the user
+    rather than silently ignoring the value."""
+    if value:
+        print("[runner] note: evaluator-concurrency is reserved — not yet "
+              "wired to the engine; the value is currently ignored.",
+              file=sys.stderr)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(prog="multivon-eval-action")
     ap.add_argument("--suite", required=True)
@@ -177,6 +187,8 @@ def main() -> int:
     ap.add_argument("--lockfile", default="")
     ap.add_argument("--staleness", default="")
     args = ap.parse_args()
+
+    _note_reserved_evaluator_concurrency(args.evaluator_concurrency)
 
     # ── 1. Load + verify lockfile if configured ────────────────────────────
     suite = _load_suite(args.suite)
@@ -235,11 +247,12 @@ def _maybe_run_baseline(suite_path: str, baseline_ref: str,
                         runs: int, workers: int) -> dict | None:
     """Best-effort baseline run.
 
-    The runner expects to be invoked from a workspace where the PR head is
-    checked out. We use ``git worktree`` to materialise the baseline ref in
-    a sibling directory, then run the suite from inside it. If git is not
-    available (e.g. the user pre-staged the baseline_report.json artifact),
-    we fall back to reading it.
+    ``baseline_ref`` is usually a git ref; we use ``git worktree`` to
+    materialise it in a sibling directory, then run the suite from inside
+    it. But if ``baseline_ref`` points at an existing ``.json`` file (a
+    committed ``baseline_report.json``), we load that as the pre-staged
+    baseline report instead — same as $MULTIVON_BASELINE_REPORT, which
+    also still works and takes precedence.
 
     Failures here never block the PR — we just skip the diff and report
     "no baseline" in the comment.
@@ -254,6 +267,17 @@ def _maybe_run_baseline(suite_path: str, baseline_ref: str,
         except Exception as exc:
             print(f"[runner] could not parse pre-staged baseline: {exc}",
                   file=sys.stderr)
+
+    # If `baseline:` points at an existing .json file, treat it as a
+    # pre-staged baseline report rather than a git ref.
+    ref_path = Path(baseline_ref)
+    if baseline_ref.endswith(".json") and ref_path.is_file():
+        try:
+            return json.loads(ref_path.read_text())
+        except Exception as exc:
+            print(f"[runner] could not parse baseline report file "
+                  f"{baseline_ref!r}: {exc}", file=sys.stderr)
+            return None
 
     workdir = tempfile.mkdtemp(prefix="multivon-baseline-")
     try:

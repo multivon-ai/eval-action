@@ -5,7 +5,7 @@ Default rules:
 
   • Any tag-`safety` evaluator regression with p<0.05  → NEEDS_REWORK
   • Any evaluator regression (p<0.05, CIs don't overlap) → FIX_THEN_MERGE
-  • Overall pass rate dropped > 5pp and the drop is significant → FIX_THEN_MERGE
+  • Overall pass rate dropped > 5pp → FIX_THEN_MERGE
   • Otherwise PASS
 
 Override via a YAML policy file passed as ``--gate-policy``::

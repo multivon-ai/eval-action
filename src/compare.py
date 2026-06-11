@@ -4,8 +4,9 @@ Statistical diff between two EvalReport JSONs.
 The interesting comparison isn't "is the new F1 lower than the old F1?"
 — it's "is the difference outside the noise band?". We compute Wilson
 confidence intervals on the per-evaluator pass rate at both refs and
-flag a per-evaluator regression only when the two CIs don't overlap,
-or when a paired McNemar test rejects equality at p < 0.05.
+flag a per-evaluator regression only when the delta is negative, the
+two CIs don't overlap, AND a paired McNemar test rejects equality at
+p < 0.05.
 
 For users without a baseline (first run on the repo), we still produce
 a per-evaluator row — just without a delta column.

@@ -56,8 +56,13 @@ on:
 jobs:
   eval:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # Required to post the PR comment
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # Required for baseline diff
       - uses: multivon-ai/eval-action@v1
         with:
           suite: evals/production.py
@@ -89,6 +94,9 @@ the base branch of the PR (typically `main`). To explicitly pin the
 baseline ref:
 
 ```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0                 # Required for baseline diff (default shallow checkout can't resolve the ref)
 - uses: multivon-ai/eval-action@v1
   with:
     suite: evals/production.py
@@ -97,8 +105,10 @@ baseline ref:
 
 For nightly trend tracking against a fixed reference run, commit a
 `baseline_report.json` to the repo and point at it via the `baseline:`
-input — the Action will diff against the saved JSON instead of
-re-running.
+input (e.g. `baseline: baseline_report.json`) — when the value is a
+path to an existing `.json` file, the Action diffs against the saved
+JSON instead of re-running. Setting the `MULTIVON_BASELINE_REPORT` env
+var to the file path also works (and takes precedence).
 
 ### Action source
 
@@ -112,11 +122,11 @@ manual-review UI clears it. The Git form works today regardless.
 | Input | Default | Description |
 |---|---|---|
 | `suite` | (required) | Path to a Python file that exposes `suite` or `build_suite()`. |
-| `baseline` | base branch of the PR | Git ref to diff against. |
+| `baseline` | base branch of the PR | Git ref to diff against — or a path to a committed `baseline_report.json` to diff against a saved run. |
 | `fail-on` | `PR_NEEDS_REWORK` | When to exit non-zero. One of `NEVER`, `PR_NEEDS_REWORK`, `PR_FIX_THEN_MERGE`, `ANY_REGRESSION`. |
 | `runs-per-case` | `3` | Multi-run flakiness detection. Higher = more confidence, more cost. |
 | `workers` | `4` | Concurrent cases. |
-| `evaluator-concurrency` | unbounded | Concurrent evaluators per case. |
+| `evaluator-concurrency` | unbounded | **Reserved — not yet wired to the engine.** Setting it logs a note and is otherwise ignored in this version. |
 | `comment-mode` | `replace` | `replace` (rewrite our previous comment), `append`, or `off`. |
 | `gate-policy` | (none) | Path to a YAML policy file overriding the default gate rules. |
 | `lockfile` | (none) | Path to a saved `suite.lock`. If set, drift causes a warning in the comment. |
@@ -170,7 +180,9 @@ Pass `gate-policy: .multivon/gate-policy.yaml` to the Action.
 
 ### Supported rule tokens
 
-The parser is intentionally minimal. These are the exact tokens it matches:
+The parser is intentionally minimal. Tokens are matched by substring
+(e.g. a rule containing `regression` anywhere fires the regression
+check) — keep rule strings to exactly these forms:
 
 | Token | What it does |
 |---|---|

@@ -11,7 +11,7 @@ inputs:
     required: true
 
   baseline:
-    description: "Git ref to diff against. Defaults to the base branch of the PR."
+    description: "Git ref to diff against, or a path to a committed baseline_report.json to diff against a saved run. Defaults to the base branch of the PR."
     required: false
     default: ""
 
@@ -31,7 +31,7 @@ inputs:
     default: "4"
 
   evaluator-concurrency:
-    description: "Parallel evaluators per case. Leave blank for unbounded."
+    description: "Reserved — not yet wired to the engine. Setting it logs a note and is otherwise ignored in this version."
     required: false
     default: ""
 

@@ -25,7 +25,7 @@ jobs:
           suite: evals/production.py
           runs-per-case: 5
           workers: 8
-          evaluator-concurrency: 4
+          # evaluator-concurrency is reserved — not yet wired to the engine
           gate-policy: .multivon/gate-policy.yaml
           lockfile: .multivon/suite.lock
           fail-on: PR_FIX_THEN_MERGE   # any regression blocks merge
