@@ -122,7 +122,12 @@ def test_save_report_writes_current_report(tmp_path, monkeypatch):
     from src import runner as runner_mod
 
     suite_file = tmp_path / "suite.py"
-    suite_file.write_text(SUITE_SRC)
+    suite_file.write_text(
+        "from multivon_eval import EvalSuite, EvalCase, NotEmpty\n"
+        "suite = EvalSuite('mini')\n"
+        "suite.add_cases([EvalCase(input='q')])\n"
+        "suite.add_evaluators(NotEmpty())\n"
+    )
     out = tmp_path / "baseline_report.json"
     monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "gh_out"))
     monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
