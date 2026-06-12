@@ -186,6 +186,10 @@ def main() -> int:
     ap.add_argument("--gate-policy", default="")
     ap.add_argument("--lockfile", default="")
     ap.add_argument("--staleness", default="")
+    ap.add_argument("--save-report", default="",
+                    help="Write the current run's report JSON to this path — "
+                         "the file you commit as baseline_report.json for "
+                         "fixed-reference trend tracking.")
     args = ap.parse_args()
 
     _note_reserved_evaluator_concurrency(args.evaluator_concurrency)
@@ -202,10 +206,18 @@ def main() -> int:
                                        workers=args.workers)
 
     # ── 3. Run the suite on the baseline (if configured) ───────────────────
+    if args.save_report:
+        Path(args.save_report).write_text(json.dumps(current_report, indent=2))
+        print(f"[runner] report saved to {args.save_report}", file=sys.stderr)
+
     baseline_ref = args.baseline or _detect_base_ref()
     baseline_report: dict | None = None
     if baseline_ref:
-        print(f"[runner] running suite on baseline ref '{baseline_ref}' …", file=sys.stderr)
+        if baseline_ref.endswith(".json") and Path(baseline_ref).is_file():
+            print(f"[runner] loading pre-staged baseline report {baseline_ref!r}",
+                  file=sys.stderr)
+        else:
+            print(f"[runner] running suite on baseline ref '{baseline_ref}' …", file=sys.stderr)
         baseline_report = _maybe_run_baseline(args.suite, baseline_ref,
                                               args.runs_per_case, args.workers)
 

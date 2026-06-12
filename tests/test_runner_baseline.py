@@ -112,3 +112,26 @@ def test_evaluator_concurrency_note_printed_when_set(capsys):
 def test_evaluator_concurrency_silent_when_unset(capsys):
     _note_reserved_evaluator_concurrency("")
     assert capsys.readouterr().err == ""
+
+
+def test_save_report_writes_current_report(tmp_path, monkeypatch):
+    """--save-report writes the current run's report JSON — the documented
+    way to produce baseline_report.json (release-readiness finding F5)."""
+    import sys
+    from unittest import mock
+    from src import runner as runner_mod
+
+    suite_file = tmp_path / "suite.py"
+    suite_file.write_text(SUITE_SRC)
+    out = tmp_path / "baseline_report.json"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "gh_out"))
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    argv = ["prog", "--suite", str(suite_file), "--comment-mode", "off",
+            "--baseline", "", "--save-report", str(out)]
+    with mock.patch.object(sys, "argv", argv):
+        with mock.patch.object(runner_mod, "_maybe_run_baseline", return_value=None):
+            code = runner_mod.main()
+    assert code == 0
+    assert out.is_file()
+    data = json.loads(out.read_text())
+    assert "summary" in data

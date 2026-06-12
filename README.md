@@ -81,7 +81,12 @@ def build_suite() -> EvalSuite:
     # Toxicity, Bias, PII + NotEmpty — add evaluators only to extend it.
     suite = EvalSuite.eu_ai_act_high_risk(jurisdiction="gdpr")
     suite.add_cases([
-        EvalCase(input="Summarize this contract.", context=open("evals/contract.txt").read()),
+        EvalCase(
+            input="Summarize this contract.",
+            # Inline for the example — in your repo, read your real documents.
+            context="Service agreement: 30-day termination notice; fees due net-45; "
+                    "liability capped at 12 months of fees.",
+        ),
         # …
     ])
     return suite
@@ -104,11 +109,20 @@ baseline ref:
 ```
 
 For nightly trend tracking against a fixed reference run, commit a
-`baseline_report.json` to the repo and point at it via the `baseline:`
-input (e.g. `baseline: baseline_report.json`) — when the value is a
-path to an existing `.json` file, the Action diffs against the saved
-JSON instead of re-running. Setting the `MULTIVON_BASELINE_REPORT` env
-var to the file path also works (and takes precedence).
+`baseline_report.json` and point at it via the `baseline:` input — when
+the value is a path to an existing `.json` file, the Action diffs
+against the saved JSON instead of re-running. Produce the file with the
+`save-report` input (or `--save-report` running the runner locally):
+
+```yaml
+- uses: multivon-ai/eval-action@v1
+  with:
+    suite: evals/production.py
+    save-report: baseline_report.json   # commit this file
+```
+
+Setting the `MULTIVON_BASELINE_REPORT` env var to the file path also
+works (and takes precedence).
 
 ### Action source
 
@@ -130,6 +144,7 @@ manual-review UI clears it. The Git form works today regardless.
 | `comment-mode` | `replace` | `replace` (rewrite our previous comment), `append`, or `off`. |
 | `gate-policy` | (none) | Path to a YAML policy file overriding the default gate rules. |
 | `lockfile` | (none) | Path to a saved `suite.lock`. If set, drift causes a warning in the comment. |
+| `save-report` | (none) | Path to write the current run's report JSON — commit it as `baseline_report.json` for fixed-reference tracking. |
 | `staleness` | (none) | Repo path (usually `.`) to check for prompt-drift staleness. Appends the `multivon-eval staleness` report to the job step summary. **Warn-only** — never changes the gate or exit code. |
 | `github-token` | `${{ github.token }}` | Token with PR `comments: write` permission. |
 

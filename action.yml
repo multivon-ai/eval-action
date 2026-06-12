@@ -55,6 +55,11 @@ inputs:
     required: false
     default: ""
 
+  save-report:
+    description: "Path to write the current run's report JSON (commit it as baseline_report.json for fixed-reference trend tracking via the baseline input)."
+    required: false
+    default: ""
+
   staleness:
     description: >-
       Path to a repo to check for prompt-drift staleness (usually "."). When
@@ -100,3 +105,5 @@ runs:
     - "${{ inputs.lockfile }}"
     - "--staleness"
     - "${{ inputs.staleness }}"
+    - "--save-report"
+    - "${{ inputs.save-report }}"
