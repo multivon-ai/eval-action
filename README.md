@@ -31,19 +31,19 @@ Pass rate 85.4% · Cost $0.0345 · Cases 50 · Runs/case 3 · Δ vs baseline −
 
 ## Why use this
 
-PR comment is where engineers actually read CI eval results. Replacing
-"the suite passed" with **"the suite passed *with these intervals*"**
-turns eval from a vibes check into a statistical gate. Specifically:
+PR comment is where engineers actually read CI eval results, and a
+bare "the suite passed" hides everything that matters at small n. So
+each comment carries:
 
-- **Wilson 95% CI** on every per-evaluator pass rate so you can tell
+- Wilson 95% CIs on every per-evaluator pass rate, so you can tell
   noise from signal at small n.
-- **McNemar paired test** on the verdict deltas — flags only the
+- A McNemar paired test on the verdict deltas, flagging only the
   evaluators whose change is statistically real.
-- **Cost report.** Every comment shows the dollar cost of the run.
-  Procurement won't approve a CI tool whose spend it can't predict.
-- **Lockfile check.** Verifies `suite.lock` hasn't drifted (catches
+- The dollar cost of the run. Procurement won't approve a CI tool
+  whose spend it can't predict.
+- A lockfile check that verifies `suite.lock` hasn't drifted (catches
   silent prompt changes).
-- **Default gate ladder.** `PASS` / `FIX_THEN_MERGE` / `NEEDS_REWORK`
+- A default gate ladder — `PASS` / `FIX_THEN_MERGE` / `NEEDS_REWORK`,
   with safety-class regressions escalating automatically.
 
 ## Quick start
@@ -145,7 +145,7 @@ manual-review UI clears it. The Git form works today regardless.
 | `gate-policy` | (none) | Path to a YAML policy file overriding the default gate rules. |
 | `lockfile` | (none) | Path to a saved `suite.lock`. If set, drift causes a warning in the comment. |
 | `save-report` | (none) | Path to write the current run's report JSON — commit it as `baseline_report.json` for fixed-reference tracking. |
-| `staleness` | (none) | Repo path (usually `.`) to check for prompt-drift staleness. Appends the `multivon-eval staleness` report to the job step summary. **Warn-only** — never changes the gate or exit code. |
+| `staleness` | (none) | Repo path (usually `.`) to check for prompt-drift staleness. Appends the `multivon-eval staleness` report to the job step summary. Warn-only: never changes the gate or exit code. |
 | `github-token` | `${{ github.token }}` | Token with PR `comments: write` permission. |
 
 ## Outputs
@@ -170,10 +170,9 @@ append the drift report to the job's step summary:
     staleness: "."
 ```
 
-This surfaces CHANGED / REMOVED / ADDED prompts next to the eval results —
+This surfaces CHANGED / REMOVED / ADDED prompts next to the eval results,
 including the determinacy headline ("N of M call sites statically
-resolvable") and the standing blind-spots footer, so the summary never
-overclaims what static analysis can know. It is warn-only by contract: a
+resolvable") and the standing blind-spots footer. It is warn-only by contract: a
 gating mode (per-category `fail-on`) is tracked in
 [eval-action#1](https://github.com/multivon-ai/eval-action/issues/1) and
 will stay opt-in.
@@ -205,7 +204,7 @@ check) — keep rule strings to exactly these forms:
 | `cost_delta_x <op> <number>` | Supports `>`, `<`, `>=`, `<=`, `==`. Compares observed cost ratio to the threshold. |
 | `lock_drift` | Reserved. Currently a no-op at the gate layer (lockfile drift is enforced one level up in the runner). |
 
-Anything else silently falls through to the default rules. **For per-evaluator targeting** (e.g. faithfulness-only or safety-class gating), the default rules already route safety-class regressions (toxicity/bias/pii/hallucination by name match) to `NEEDS_REWORK` at p<0.05 — you don't need a custom rule for that.
+Anything else silently falls through to the default rules. For per-evaluator targeting (e.g. faithfulness-only or safety-class gating), the default rules already route safety-class regressions (toxicity/bias/pii/hallucination by name match) to `NEEDS_REWORK` at p<0.05 — you don't need a custom rule for that.
 
 A typed DSL with `evaluator(name).<field>` accessors is tracked as [post-launch work](https://github.com/multivon-ai/eval-action/issues) — earlier versions of this README advertised that syntax but the parser never landed it.
 
@@ -225,27 +224,27 @@ Verdict → exit code is driven by the `fail-on` input.
 
 ## What it doesn't do
 
-- **Replaces neither pytest nor your existing CI.** The Action is a
-  layer on top — pair it with `pytest -q` in another job.
-- **Does not check out arbitrary refs.** Uses git worktree against
+- It doesn't replace pytest or your existing CI. The Action is a
+  layer on top; pair it with `pytest -q` in another job.
+- It doesn't check out arbitrary refs — it uses git worktree against
   whatever refs your checkout step staged.
-- **Does not handle PRs from forks** that lack `secrets.OPENAI_API_KEY`.
+- PRs from forks that lack `secrets.OPENAI_API_KEY` won't work.
   Standard GitHub limitation; document a `workflow_run` pattern for
   fork support.
 
 ## Pairs with the `eval-audit` Claude Code skill
 
-This Action runs eval gates **at PR time**. The
+This Action runs eval gates at PR time. The
 [`eval-audit` Claude Code skill](https://github.com/multivon-ai/multivon-eval/blob/main/multivon_eval/_skills/eval-audit/SKILL.md)
-runs the *same* underlying comparison **pre-push**, so the developer
+runs the same underlying comparison pre-push, so the developer
 sees the regression in their editor before opening a PR. Both call
 into the same `multivon-eval` engine (`compare_reports`, paired
-McNemar, Wilson CIs); they differ only in *where the agent lives*:
+McNemar, Wilson CIs); they differ only in where the agent lives:
 
-- **Pre-PR (editor):** Claude Code skill — `multivon-eval install-skills`
+- Pre-PR, in the editor: the Claude Code skill. `multivon-eval install-skills`
   wires it up so it auto-invokes between `/review` and `/ship` on diffs
   touching prompts / model calls / tool defs.
-- **PR time (CI):** this Action — posts the verdict as a PR comment
+- PR time, in CI: this Action posts the verdict as a PR comment
   and gates the merge.
 
 Using both gives you a two-stage gate: fast feedback in the editor,
@@ -255,7 +254,7 @@ stands alone.
 ## Cost expectations
 
 For a 50-case suite × 3 runs × 5 sub-calls/case on `gpt-4o-mini`:
-roughly **$0.03 per PR** at default settings, and the comment shows
+roughly $0.03 per PR at default settings, and the comment shows
 the actual number every time.
 
 Pair with multivon-eval's built-in judge cache (`JudgeConfig(cache=True)`)
